@@ -70,7 +70,7 @@
     "svn_executable_path": "svn",
 
     //Additional arguments for 'svn log' command
-    "svn_log_args": "",
+    "svn_log_args": "--stop-on-copy",
 
     //Additional arguments for 'svn cat' command
     "svn_cat_args": ""
