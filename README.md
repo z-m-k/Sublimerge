@@ -29,11 +29,15 @@ Installation
 If you are using Will Bond's Package Control, you can easily install Sublimerge with `Package Control: Install Package`.
 Otherwise you can simply clone this repo in Sublime Text 2' Packages directory.
 
+Donation
+--------
+
+If you find this plugin useful, you can say "thanks" by Donation: http://borysforytarz.pl/sublimerge.html :)
+
 --
-
 Because this is my first Sublime Text 2 plugin and the first Python code I have ever written, probably some things could be done
-better. So any feedback is welcome!
+better - any feedback is welcome!
 
-https://github.com/borysf/Sublimerge
-borys.forytarz@gmail.com
-http://borysforytarz.pl
+https://github.com/borysf/Sublimerge  
+borys.forytarz@gmail.com  
+http://borysforytarz.pl  
