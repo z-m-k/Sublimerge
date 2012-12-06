@@ -17,6 +17,9 @@
     //set to true if you want to ignore whitespace differences:
     "ignore_whitespace": false,
 
+    //set to true if you want to ignore differences in new line characters (CR/LF)
+    "ignore_crlf": true,
+
     //the text that expands lines in difference regions:
     "diff_region_expander_text": "?",
 

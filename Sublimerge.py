@@ -52,6 +52,7 @@ class SublimergeSettings():
         'selected_diff_region_scope': 'selection',
         'selected_diff_region_gutter_icon': 'bookmark',
         'ignore_whitespace': False,
+        'ignore_crlf': True,
         'vcs_support': True,
         'git_executable_path': 'git',
         'git_log_args': '',
@@ -344,17 +345,27 @@ class SublimergeView():
                 right.insert(edit, right.size(), part)
                 right.end_edit(edit)
             else:
+                ignore = False
+
                 if S.get('ignore_whitespace'):
                     trimRe = '(^\s+)|(\s+$)'
                     if re.sub(trimRe, '', part['+']) == re.sub(trimRe, '', part['-']):
-                        edit = left.begin_edit()
-                        left.insert(edit, left.size(), part['-'])
-                        left.end_edit(edit)
+                        ignore = True
 
-                        edit = right.begin_edit()
-                        right.insert(edit, right.size(), part['+'])
-                        right.end_edit(edit)
-                        continue
+                if S.get('ignore_crlf'):
+                    trimRe = '([\r\n]+$)'
+                    if re.sub(trimRe, '', part['+']) == re.sub(trimRe, '', part['-']):
+                        ignore = True
+
+                if ignore:
+                    edit = left.begin_edit()
+                    left.insert(edit, left.size(), part['-'])
+                    left.end_edit(edit)
+
+                    edit = right.begin_edit()
+                    right.insert(edit, right.size(), part['+'])
+                    right.end_edit(edit)
+                    continue
 
                 pair = {
                     'regionLeft': None,
@@ -387,12 +398,18 @@ class SublimergeView():
                             lastChange = change
                         else:
                             for m in re.finditer('([+-^]+)', inline):
+                                if S.get('ignore_crlf') and re.sub('([\r\n]+$)', '', inline[m.start():m.end() - m.start()]) == '':
+                                    continue
+
                                 sign = m.group(0)[0:1]
 
                                 if sign == '^':
                                     sign = lastChange
 
-                                part['intralines'][sign].append([begins[sign] - lastLen + m.start(), begins[sign] - lastLen + m.end()])
+                                start = begins[sign] - lastLen + m.start()
+                                end = begins[sign] - lastLen + m.end()
+
+                                part['intralines'][sign].append([start, end])
 
                 enlarged = self.enlargeCorrespondingPart(part['+'], part['-'])
 
@@ -633,12 +650,15 @@ class SublimergeDiffThread(threading.Thread):
         ThreadProgress(self, 'Computing differences')
 
         global diffView
-        diff = SublimergeDiffer().difference(self.text1, self.text2)
 
         differs = False
 
         if S.get('ignore_whitespace'):
             regexp = re.compile('(^\s+)|(\s+$)', re.MULTILINE)
+            if re.sub(regexp, '', self.text1) != re.sub(regexp, '', self.text2):
+                differs = True
+        elif S.get('ignore_crlf'):
+            regexp = re.compile('([\r\n]+$)', re.MULTILINE)
             if re.sub(regexp, '', self.text1) != re.sub(regexp, '', self.text2):
                 differs = True
         elif self.text1 != self.text2:
@@ -647,6 +667,8 @@ class SublimergeDiffThread(threading.Thread):
         if not differs:
             sublime.message_dialog('There is no difference between files')
             return
+
+        diff = SublimergeDiffer().difference(self.text1, self.text2)
 
         def inner():
             global diffView
