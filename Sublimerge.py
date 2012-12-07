@@ -366,11 +366,6 @@ class SublimergeView():
                     if re.sub(trimRe, '', part['+']) == re.sub(trimRe, '', part['-']):
                         ignore = True
 
-                if S.get('ignore_crlf'):
-                    trimRe = '([\r\n]+$)'
-                    if re.sub(trimRe, '', part['+']) == re.sub(trimRe, '', part['-']):
-                        ignore = True
-
                 if ignore:
                     edit = left.begin_edit()
                     left.insert(edit, left.size(), part['-'])
@@ -412,9 +407,6 @@ class SublimergeView():
                             lastChange = change
                         else:
                             for m in re.finditer('([+-^]+)', inline):
-                                if S.get('ignore_crlf') and re.sub('([\r\n]+$)', '', inline[m.start():m.end() - m.start()]) == '':
-                                    continue
-
                                 sign = m.group(0)[0:1]
 
                                 if sign == '^':
@@ -667,12 +659,13 @@ class SublimergeDiffThread(threading.Thread):
 
         differs = False
 
+        if S.get('ignore_crlf'):
+            regexp = re.compile('([\r\n]+$)', re.MULTILINE)
+            self.text1 = re.sub(regexp, '\n', self.text1)
+            self.text2 = re.sub(regexp, '\n', self.text2)
+
         if S.get('ignore_whitespace'):
             regexp = re.compile('(^\s+)|(\s+$)', re.MULTILINE)
-            if re.sub(regexp, '', self.text1) != re.sub(regexp, '', self.text2):
-                differs = True
-        elif S.get('ignore_crlf'):
-            regexp = re.compile('([\r\n]+$)', re.MULTILINE)
             if re.sub(regexp, '', self.text1) != re.sub(regexp, '', self.text2):
                 differs = True
         elif self.text1 != self.text2:
