@@ -111,19 +111,31 @@ class SublimergeDiffer():
         gen = difflib.Differ().compare(text1.splitlines(1), text2.splitlines(1))
 
         lastIdx = -1
-        line0 = None
-        line1 = None
+        # line0 = None
+        # line1 = None
 
-        try:
-            line0 = gen.next()
-            line1 = gen.next()
-        except:
-            pass
+        # try:
+        #     line0 = gen.next()
+        #     line1 = gen.next()
+        # except:
+        #     pass
 
-        for line2 in gen:
+        #for line2 in gen:
+        lst = list(gen)
+        i = -1
+        for line0 in lst:
+            i += 1
+            line1 = None
+            line2 = None
+            try:
+                line1 = lst[i + 1]
+                line2 = lst[i + 2]
+            except:
+                pass
+
             lines = [line0, line1, line2]
-            line0 = line1
-            line1 = line2
+            #line0 = line1
+            #line1 = line2
 
             change = lines[0][0]
             lines[0] = lines[0][2:len(lines[0])]
@@ -189,6 +201,8 @@ class SublimergeDiffer():
                 else:
                     data.append(part)
                     lastIdx += 1
+
+        print lines
 
         return data
 
