@@ -278,6 +278,7 @@ class SublimergeView():
     diff = None
     createdPositions = False
     tmpFile = ''
+    lastSel = {'regionLeft': None, 'regionRight': None}
 
     def __init__(self, window, left, right, diff):
         window.run_command('new_window')
@@ -490,6 +491,33 @@ class SublimergeView():
             self.left.show_at_center(sublime.Region(self.currentRegion['regionLeft'].begin(), self.currentRegion['regionLeft'].begin()))
             if not S.get('ignore_whitespace'):  # @todo: temporary fix for loosing view sync while ignore_whitespace is true
                 self.right.show_at_center(sublime.Region(self.currentRegion['regionRight'].begin(), self.currentRegion['regionRight'].begin()))
+
+    def selectDiffUnderSelection(self, selection, side):
+        if self.createdPositions:
+            if selection[0].begin() == 0 and selection[0].end() == 0:  # this fixes strange behavior with regions
+                return
+
+            for i in range(len(self.regions)):
+                if self.regions[i][side].contains(selection[0]):
+                    self.selectDiff(i)
+                    break
+
+    def checkForClick(self, view):
+        side = None
+
+        if view.id() == self.left.id():
+            side = 'regionLeft'
+        elif view.id() == self.right.id():
+            side = 'regionRight'
+
+        if side != None:
+            sel = [r for r in view.sel()]
+
+            if self.lastSel[side]:
+                if sel == self.lastSel[side]:  # previous selection equals current so it means this was a mouse click!
+                    self.selectDiffUnderSelection(view.sel(), side)
+
+            self.lastSel[side] = sel
 
     def goUp(self):
         self.selectDiff(self.currentDiff - 1)
@@ -1044,3 +1072,7 @@ class SublimergeListener(sublime_plugin.EventListener):
                 if wnd != None:
                     wnd.run_command('close_window')
                 diffView = None
+
+    def on_selection_modified(self, view):
+        if diffView:
+            diffView.checkForClick(view)
