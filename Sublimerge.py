@@ -202,8 +202,6 @@ class SublimergeDiffer():
                     data.append(part)
                     lastIdx += 1
 
-        print lines
-
         return data
 
 
