@@ -706,22 +706,31 @@ class SublimergeHistoryThread(threading.Thread):
         for line in executeShellCmd(cmd, sp[0]):
             xml += line
 
-        if xml != '':
-            dom = minidom.parseString(xml)
-            commitStack = []
-            for entry in dom.getElementsByTagName('logentry'):
-                author = entry.getElementsByTagName('author')[0].childNodes[0].nodeValue
-                date = entry.getElementsByTagName('date')[0].childNodes[0].nodeValue
-                msgs = entry.getElementsByTagName('msg')
+        if xml != '' and re.match('^<\?xml', xml):
+            try:
+                dom = minidom.parseString(xml)
+                commitStack = []
+                for entry in dom.getElementsByTagName('logentry'):
+                    author = entry.getElementsByTagName('author')[0].childNodes[0].nodeValue
+                    date = entry.getElementsByTagName('date')[0].childNodes[0].nodeValue
+                    msgs = entry.getElementsByTagName('msg')
 
-                if len(msgs) > 0 and len(msgs[0].childNodes) > 0:
-                    msg = msgs[0].childNodes[0].nodeValue.splitlines()
-                else:
-                    msg = []
+                    if len(msgs) > 0 and len(msgs[0].childNodes) > 0:
+                        msg = msgs[0].childNodes[0].nodeValue.splitlines()
+                    else:
+                        msg = []
 
-                commitStack.append({'commit': entry.getAttribute('revision'), 'author': author, 'date': date, 'msg': msg})
+                    commitStack.append({'commit': entry.getAttribute('revision'), 'author': author, 'date': date, 'msg': msg})
 
-            self.displayQuickPanel(commitStack, self.sublimerge.onListSelectSvn)
+                self.displayQuickPanel(commitStack, self.sublimerge.onListSelectSvn)
+            except:
+                sublime.error_message('Unable to parse XML')
+
+        elif xml != '':
+            sublime.error_message(xml.decode('utf-8', 'replace'))
+
+        else:
+            sublime.error_message('Empty svn log output')
 
     def fetchFromGit(self):
         commitStack = []
