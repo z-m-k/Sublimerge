@@ -797,7 +797,10 @@ class SublimergeHistoryThread(threading.Thread):
         def inner():
             self.sublimerge.displayQuickPanel(commitStack, callback)
 
-        sublime.set_timeout(inner, 100)
+        if len(commitStack) == 0:
+            sublime.error_message("No history for file\n%s\nIs it versioned?" % (self.filename))
+        else:
+            sublime.set_timeout(inner, 100)
 
 
 class SublimergeCommand(sublime_plugin.WindowCommand):
