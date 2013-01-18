@@ -686,7 +686,7 @@ class SublimergeDiffThread(threading.Thread):
         differs = False
 
         if S.get('ignore_crlf'):
-            regexp = re.compile('([\r\n]+)')
+            regexp = re.compile('([\r\n])')
             self.text1 = re.sub(regexp, '\n', self.text1)
             self.text2 = re.sub(regexp, '\n', self.text2)
 
