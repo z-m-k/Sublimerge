@@ -892,7 +892,7 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
 
         if index >= 0:
             outfile = '%s/%s@%s' % (sp[0], sp[1], self.commits[index][0:10])
-            cmd = '%s show %s %s:"./%s" > %s' % (S.get('git_executable_path'), S.get('git_show_args'), self.commits[index], sp[1], outfile)
+            cmd = '%s show %s %s:"./%s" > "%s"' % (S.get('git_executable_path'), S.get('git_show_args'), self.commits[index], sp[1], outfile)
 
             for line in executeShellCmd(cmd, sp[0]):
                 print line
@@ -908,7 +908,7 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
 
             outfile = '%s/%s@%s' % (sp[0], sp[1], self.commits[index])
 
-            cmd = '%s cat "%s"@%s %s > %s' % (S.get('svn_executable_path'), sp[1], self.commits[index], S.get('svn_cat_args'), outfile)
+            cmd = '%s cat "%s"@%s %s > "%s"' % (S.get('svn_executable_path'), sp[1], self.commits[index], S.get('svn_cat_args'), outfile)
 
             for line in executeShellCmd(cmd, sp[0]):
                 print line
