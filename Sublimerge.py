@@ -686,9 +686,11 @@ class SublimergeDiffThread(threading.Thread):
         differs = False
 
         if S.get('ignore_crlf'):
-            regexp = re.compile('([\r\n])')
-            self.text1 = re.sub(regexp, '\n', self.text1)
-            self.text2 = re.sub(regexp, '\n', self.text2)
+            self.text1 = re.sub('\r\n', '\n', self.text1)
+            self.text2 = re.sub('\r\n', '\n', self.text2)
+
+            self.text1 = re.sub('\r', '\n', self.text1)
+            self.text2 = re.sub('\r', '\n', self.text2)
 
         if S.get('ignore_whitespace'):
             regexp = re.compile('(^\s+)|(\s+$)', re.MULTILINE)
