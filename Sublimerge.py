@@ -701,6 +701,8 @@ class SublimergeDiffThread(threading.Thread):
 
         if not differs:
             sublime.error_message('There is no difference between files')
+            if isinstance(self.right, unicode):
+                os.remove(self.right)
             return
 
         diff = SublimergeDiffer().difference(self.text1, self.text2)
