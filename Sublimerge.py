@@ -106,103 +106,107 @@ def executeShellCmd(exe, cwd):
 
 
 class SublimergeDiffer():
+
+    def process(self, line0, line1, line2):
+        if line0 == None:
+            return
+
+        change = line0[0]
+        line0 = line0[2:len(line0)]
+
+        part = None
+
+        if change == '+':
+            part = {'+': line0, '-': '', 'change': '+', 'intraline': '', 'intralines': {'+': [], '-': []}}
+
+        elif change == '-':
+            part = {'-': line0, '+': '', 'change': '-', 'intraline': '', 'intralines': {'+': [], '-': []}}
+
+        elif change == ' ':
+            part = line0
+
+        elif change == '?':
+            return
+
+        if isinstance(part, str) and isinstance(self.data[self.lastIdx], str):
+            self.data[self.lastIdx] += part
+        else:
+            if isinstance(part, dict):
+                if line1 and line1[0] == '?':
+                    part['intraline'] = change
+
+                if self.lastIdx >= 0:
+                    last = self.data[self.lastIdx]
+                else:
+                    last = None
+
+                if isinstance(last, dict):
+                    skip = False
+
+                    im_p = last['intraline'] == '-' and part['change'] == '+'
+                    im_ip = last['intraline'] == '-' and part['intraline'] == '+'
+                    m_ip = last['change'] == '-' and part['intraline'] == '+'
+
+                    if im_p or im_ip or m_ip:
+                        self.data[self.lastIdx]['+'] += part['+']
+                        self.data[self.lastIdx]['-'] += part['-']
+                        self.data[self.lastIdx]['intraline'] = '!'
+                        skip = True
+                    elif part['intraline'] == '' and last['intraline'] == '':
+                        nextIntraline = None
+                        if line2 and line2[0] == '?':
+                            nextIntraline = line1[0]
+
+                        if nextIntraline == '+' and part['change'] == '-':
+                            self.data.append(part)
+                            self.lastIdx += 1
+                            skip = True
+                        else:
+                            self.data[self.lastIdx]['+'] += part['+']
+                            self.data[self.lastIdx]['-'] += part['-']
+                            skip = True
+
+                    if not skip:
+                        self.data.append(part)
+                        self.lastIdx += 1
+                else:
+                    self.data.append(part)
+                    self.lastIdx += 1
+            else:
+                self.data.append(part)
+                self.lastIdx += 1
+
     def difference(self, text1, text2):
-        data = []
+        self.data = []
+        self.lastIdx = -1
         gen = difflib.Differ().compare(text1.splitlines(1), text2.splitlines(1))
 
-        lastIdx = -1
-        # line0 = None
-        # line1 = None
+        line0 = None
+        line1 = None
+        line2 = None
 
-        # try:
-        #     line0 = gen.next()
-        #     line1 = gen.next()
-        # except:
-        #     pass
+        try:
+            line0 = gen.next()
+            line1 = gen.next()
+        except:
+            pass
 
-        #for line2 in gen:
-        lst = list(gen)
-        i = -1
-        for line0 in lst:
-            i += 1
-            line1 = None
-            line2 = None
-            try:
-                line1 = lst[i + 1]
-                line2 = lst[i + 2]
-            except:
-                pass
+        inFor = False
 
-            lines = [line0, line1, line2]
-            #line0 = line1
-            #line1 = line2
+        for line2 in gen:
+            self.process(line0, line1, line2)
+            line0 = line1
+            line1 = line2
+            inFor = True
 
-            change = lines[0][0]
-            lines[0] = lines[0][2:len(lines[0])]
+        self.process(line0, line1, None)
 
-            part = None
+        if not inFor:
+            self.process(line1, line2, None)
 
-            if change == '+':
-                part = {'+': lines[0], '-': '', 'change': '+', 'intraline': '', 'intralines': {'+': [], '-': []}}
+        self.process(line2, None, None)
 
-            elif change == '-':
-                part = {'-': lines[0], '+': '', 'change': '-', 'intraline': '', 'intralines': {'+': [], '-': []}}
-
-            elif change == ' ':
-                part = lines[0]
-
-            elif change == '?':
-                continue
-
-            if isinstance(part, str) and isinstance(data[lastIdx], str):
-                data[lastIdx] += part
-            else:
-                if isinstance(part, dict):
-                    if lines[1] and lines[1][0] == '?':
-                        part['intraline'] = change
-
-                    if lastIdx >= 0:
-                        last = data[lastIdx]
-                    else:
-                        last = None
-
-                    if isinstance(last, dict):
-                        skip = False
-
-                        im_p = last['intraline'] == '-' and part['change'] == '+'
-                        im_ip = last['intraline'] == '-' and part['intraline'] == '+'
-                        m_ip = last['change'] == '-' and part['intraline'] == '+'
-
-                        if im_p or im_ip or m_ip:
-                            data[lastIdx]['+'] += part['+']
-                            data[lastIdx]['-'] += part['-']
-                            data[lastIdx]['intraline'] = '!'
-                            skip = True
-                        elif part['intraline'] == '' and last['intraline'] == '':
-                            nextIntraline = None
-                            if lines[2] and lines[2][0] == '?':
-                                nextIntraline = lines[1][0]
-
-                            if nextIntraline == '+' and part['change'] == '-':
-                                data.append(part)
-                                lastIdx += 1
-                                skip = True
-                            else:
-                                data[lastIdx]['+'] += part['+']
-                                data[lastIdx]['-'] += part['-']
-                                skip = True
-
-                        if not skip:
-                            data.append(part)
-                            lastIdx += 1
-                    else:
-                        data.append(part)
-                        lastIdx += 1
-                else:
-                    data.append(part)
-                    lastIdx += 1
-
-        return data
+        return self.data
 
 
 class SublimergeScrollSync():
