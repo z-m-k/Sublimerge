@@ -824,56 +824,58 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
         self.viewsPaths = []
         active = self.window.active_view()
 
-        if self.saved(active):
-            allViews = self.window.views()
-            ratios = []
-            if S.get('intelligent_files_sort'):
-                original = os.path.split(active.file_name())
+        allViews = self.window.views()
+        ratios = []
+        if S.get('intelligent_files_sort'):
+            original = os.path.split(active.file_name())
 
-            for view in allViews:
-                if view.file_name() != None and view.file_name() != active.file_name() and (not S.get('same_syntax_only') or view.settings().get('syntax') == active.settings().get('syntax')):
-                    f = view.file_name()
+        for view in allViews:
+            if view.file_name() != None and view.file_name() != active.file_name() and (not S.get('same_syntax_only') or view.settings().get('syntax') == active.settings().get('syntax')):
+                f = view.file_name()
 
-                    ratio = 0
+                ratio = 0
 
-                    if S.get('intelligent_files_sort'):
-                        ratio = difflib.SequenceMatcher(None, original[1], os.path.split(f)[1]).ratio()
+                if S.get('intelligent_files_sort'):
+                    ratio = difflib.SequenceMatcher(None, original[1], os.path.split(f)[1]).ratio()
 
-                    ratios.append({'ratio': ratio, 'file': f, 'dirname': ''})
+                ratios.append({'ratio': ratio, 'file': f, 'dirname': ''})
 
-            ratiosLength = len(ratios)
+        ratiosLength = len(ratios)
 
-            if ratiosLength > 0:
-                ratios.sort(self.sortFiles)
+        if ratiosLength > 0:
+            ratios.sort(self.sortFiles)
 
-                if S.get('compact_files_list'):
-                    for i in range(ratiosLength):
-                        for j in range(ratiosLength):
-                            if i != j:
-                                sp1 = os.path.split(ratios[i]['file'])
-                                sp2 = os.path.split(ratios[j]['file'])
+            if S.get('compact_files_list'):
+                for i in range(ratiosLength):
+                    for j in range(ratiosLength):
+                        if i != j:
+                            sp1 = os.path.split(ratios[i]['file'])
+                            sp2 = os.path.split(ratios[j]['file'])
 
-                                if sp1[1] == sp2[1]:
-                                    ratios[i]['dirname'] = self.getFirstDifferentDir(sp1[0], sp2[0])
-                                    ratios[j]['dirname'] = self.getFirstDifferentDir(sp2[0], sp1[0])
+                            if sp1[1] == sp2[1]:
+                                ratios[i]['dirname'] = self.getFirstDifferentDir(sp1[0], sp2[0])
+                                ratios[j]['dirname'] = self.getFirstDifferentDir(sp2[0], sp1[0])
 
-                for f in ratios:
-                    self.viewsPaths.append(f['file'])
-                    self.viewsList.append(self.prepareListItem(f['file'], f['dirname']))
+            for f in ratios:
+                self.viewsPaths.append(f['file'])
+                self.viewsList.append(self.prepareListItem(f['file'], f['dirname']))
 
-                self.window.show_quick_panel(self.viewsList, self.onListSelect)
-            else:
-                if S.get('same_syntax_only'):
-                    syntax = re.match('(.+)\.tmLanguage$', os.path.split(active.settings().get('syntax'))[1])
-                    if syntax != None:
-                        sublime.error_message('There are no other open ' + syntax.group(1) + ' files to compare')
-                        return
+            self.window.show_quick_panel(self.viewsList, self.onListSelect)
+        else:
+            if S.get('same_syntax_only'):
+                syntax = re.match('(.+)\.tmLanguage$', os.path.split(active.settings().get('syntax'))[1])
+                if syntax != None:
+                    sublime.error_message('There are no other open ' + syntax.group(1) + ' files to compare')
+                    return
 
-                sublime.error_message('There are no other open files to compare')
+            sublime.error_message('There are no other open files to compare')
 
     def run(self):
         self.window = sublime.active_window()
         self.active = self.window.active_view()
+
+        if not self.active or not self.saved(self.active):
+            return
 
         sp = os.path.split(self.active.file_name())
         vcs = lookForVcs(sp[0])
@@ -980,7 +982,7 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
 
     def saved(self, view):
         if view.is_dirty():
-            sublime.error_message('File `' + view.file_name() + '` must be saved in order to compare')
+            sublime.error_message('File `' + os.path.split(view.file_name())[1] + '` must be saved in order to compare')
             return False
 
         return True
