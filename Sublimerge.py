@@ -281,13 +281,14 @@ class SublimergeView():
     lastRightPos = None
     diff = None
     createdPositions = False
-    tmpFile = ''
     lastSel = {'regionLeft': None, 'regionRight': None}
 
-    def __init__(self, window, left, right, diff):
+    def __init__(self, window, left, right, diff, leftTmp=False, rightTmp=False):
         window.run_command('new_window')
         self.window = sublime.active_window()
         self.diff = diff
+        self.leftTmp = leftTmp
+        self.rightTmp = rightTmp
 
         if (S.get('hide_side_bar')):
             self.window.run_command('toggle_side_bar')
@@ -298,19 +299,26 @@ class SublimergeView():
             "cells": [[0, 0, 1, 1], [1, 0, 2, 1]]
         })
 
-        self.left = self.window.open_file(left.file_name())
+        if isinstance(left, unicode):
+            self.left = self.window.open_file(left)
+        else:
+            self.left = self.window.open_file(left.file_name())
 
         if isinstance(right, unicode):
             self.right = self.window.open_file(right)
-            self.right.set_syntax_file(left.settings().get('syntax'))
-            self.tmpFile = right
         else:
             self.right = self.window.open_file(right.file_name())
-            self.right.set_syntax_file(right.settings().get('syntax'))
 
-        self.left.set_syntax_file(left.settings().get('syntax'))
+        if not leftTmp and rightTmp:
+            self.right.set_syntax_file(self.left.settings().get('syntax'))
+
         self.left.set_scratch(True)
         self.right.set_scratch(True)
+
+        if self.leftTmp and isinstance(left, unicode):
+            os.remove(left)
+        if self.rightTmp and isinstance(right, unicode):
+            os.remove(right)
 
     def enlargeCorrespondingPart(self, part1, part2):
         linesPlus = part1.splitlines()
@@ -530,7 +538,7 @@ class SublimergeView():
         self.selectDiff(self.currentDiff + 1)
 
     def merge(self, direction, mergeAll):
-        if self.tmpFile != '' and direction == '>>':
+        if (self.rightTmp and direction == '>>') or (self.leftTmp and direction == '<<'):
             return
 
         if mergeAll:
@@ -668,12 +676,19 @@ class ThreadProgress():
 
 
 class SublimergeDiffThread(threading.Thread):
-    def __init__(self, window, left, right):
+    def __init__(self, window, left, right, leftTmp=False, rightTmp=False):
         self.window = window
         self.left = left
         self.right = right
+        self.leftTmp = leftTmp
+        self.rightTmp = rightTmp
 
-        self.text1 = self.left.substr(sublime.Region(0, self.left.size()))
+        #self.text1 = self.left.substr(sublime.Region(0, self.left.size()))
+
+        if isinstance(self.left, unicode):
+            self.text1 = open(self.left, 'rb').read().decode('utf-8', 'replace')
+        else:
+            self.text1 = self.left.substr(sublime.Region(0, self.left.size()))
 
         if isinstance(self.right, unicode):
             self.text2 = open(self.right, 'rb').read().decode('utf-8', 'replace')
@@ -705,7 +720,9 @@ class SublimergeDiffThread(threading.Thread):
 
         if not differs:
             sublime.error_message('There is no difference between files')
-            if isinstance(self.right, unicode):
+            if self.leftTmp and isinstance(self.left, unicode):
+                os.remove(self.left)
+            if self.rightTmp and isinstance(self.right, unicode):
                 os.remove(self.right)
             return
 
@@ -713,7 +730,7 @@ class SublimergeDiffThread(threading.Thread):
 
         def inner():
             global diffView
-            diffView = SublimergeView(self.window, self.left, self.right, diff)
+            diffView = SublimergeView(self.window, self.left, self.right, diff, self.leftTmp, self.rightTmp)
 
         sublime.set_timeout(inner, 100)
 
@@ -907,7 +924,7 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
             for line in executeShellCmd(cmd, sp[0]):
                 print line
 
-            th = SublimergeDiffThread(self.window, self.active, outfile)
+            th = SublimergeDiffThread(self.window, self.active, outfile, rightTmp=True)
             th.start()
 
         return False
@@ -923,7 +940,7 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
             for line in executeShellCmd(cmd, sp[0]):
                 print line
 
-            th = SublimergeDiffThread(self.window, self.active, outfile)
+            th = SublimergeDiffThread(self.window, self.active, outfile, rightTmp=True)
             th.start()
 
     def displayQuickPanel(self, commitStack, callback):
@@ -1028,6 +1045,24 @@ class SublimergeMergeRightCommand(sublime_plugin.WindowCommand):
             diffView.merge('>>', mergeAll)
 
 
+class SublimergeDiffSelectedFiles(sublime_plugin.WindowCommand):
+    def run(self, files):
+        th = SublimergeDiffThread(self.window, files[0], files[1])
+        th.start()
+
+    def is_enabled(self, files):
+        return len(files) == 2
+
+
+class SublimergeFromSidebar(sublime_plugin.WindowCommand):
+    def is_enabled(self, files):
+        return len(files) == 1
+
+    def run(self, files):
+        sublime.active_window().open_file(files[0], sublime.TRANSIENT)
+        sublime.active_window().run_command('sublimerge')
+
+
 class SublimergeListener(sublime_plugin.EventListener):
     left = None
     right = None
@@ -1043,9 +1078,6 @@ class SublimergeListener(sublime_plugin.EventListener):
             elif view.id() == diffView.right.id():
                 print "Right file: " + view.file_name()
                 self.right = view
-
-                if diffView.tmpFile != '':
-                    os.remove(diffView.tmpFile)
 
             if self.left != None and self.right != None:
                 diffView.loadDiff()

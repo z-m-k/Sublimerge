@@ -23,6 +23,15 @@ Default key bindings (platform independent)
 `[ctrl]+[alt]+[-]` or `[ctrl]+[alt]+[pageup]` - go to the previous difference  
 
 
+Access from context menus
+-------------------------
+
+You can access Sublimerge from the following context menus:
+- selected file(s) in sidebar
+- editor's text area
+- file's tab
+
+
 Installation
 ------------
 
