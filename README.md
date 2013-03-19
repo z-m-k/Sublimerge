@@ -27,16 +27,16 @@ Access from context menus
 -------------------------
 
 You can access Sublimerge from the following context menus:
-- of one selected file in sidebar  
+- Side Bar: one selected file  
   ![Sublimerge](http://borysforytarz.pl/img/context-one-file.png "Sublimerge")
 
-- of two selected files to compare both with each other  
+- Side Bar: two selected files  
   ![Sublimerge](http://borysforytarz.pl/img/context-two-files.png "Sublimerge")
 
-- of editor's text area  
+- Editor: View  
   ![Sublimerge](http://borysforytarz.pl/img/context-text-area.png "Sublimerge")
 
-- of open file's tab  
+- Editor: File's tab  
   ![Sublimerge](http://borysforytarz.pl/img/context-tab.png "Sublimerge")  
 
 
