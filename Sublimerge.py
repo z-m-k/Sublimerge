@@ -843,6 +843,13 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
     commits = []
     window = None
     view = None
+    
+    def is_enabled(self):
+        view = sublime.active_window().active_view();
+        if diffView and  diffView.left and diffView.right and view and (view.id() == diffView.left.id() or view.id() == diffView.right.id()):
+            return False
+
+        return True
 
     def getComparableFiles(self):
         self.viewsList = []
