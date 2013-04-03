@@ -1,7 +1,7 @@
 Sublimerge
 ==========
 
-Sublimerge is a Sublime Text 2 plugin which allows to diff and merge files DIRECTLY in the editor using graphical interface for that purpose.
+Sublimerge is a Sublime Text 2/3 plugin which allows to diff and merge files DIRECTLY in the editor using graphical interface for that purpose.
 
 If file is under GIT or SVN it is now possible to compare it with its other revisions. This is experimental feature and can be simply
 turned off via package settings (vcs_support). Please report any problems with this feature. Requires svn or git to be installed.
@@ -45,6 +45,10 @@ Installation
 
 If you are using Will Bond's Package Control, you can easily install Sublimerge with `Package Control: Install Package`.
 Otherwise you can simply clone this repo in Sublime Text 2' Packages directory.
+
+Note for Sublime Text 3 users
+-----------------------------
+Sublimerge is now experimentally ported for ST 3. To install clone this repo in ST3 Packages' directory and checkout into branch sublime-text-3
 
 Donation
 --------
