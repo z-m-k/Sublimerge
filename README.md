@@ -47,7 +47,7 @@ You can access Sublimerge from the following context menus:
 Installation
 ------------
 
-Clone this repo in Sublime Text 3' Packages directory.
+Clone this repo in Sublime Text 3' Packages directory and checkout into sublime-text-3
 
 Donation
 --------
