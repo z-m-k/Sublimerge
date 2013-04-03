@@ -97,14 +97,17 @@ def lookForVcs(path):
 
 
 def executeShellCmd(exe, cwd):
-    print "Cmd: %s" % (exe)
-    print "Dir: %s" % (cwd)
+    #print "Cmd: %s" % (exe)
+    #print "Dir: %s" % (cwd)
 
     p = subprocess.Popen(exe, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd, shell=True)
 
     while(True):
         retcode = p.poll()
-        line = re.sub('(^\s+$)|(\s+$)', '', p.stdout.readline())
+        line = p.stdout.readline()
+
+        if isinstance(line, str):
+            line = re.sub('(^\s+$)|(\s+$)', '', p.stdout.readline())
 
         if line != '':
             yield line
@@ -136,7 +139,7 @@ class SublimergeDiffer():
         elif change == '?':
             return
 
-        if isinstance(part, str) and isinstance(self.data[self.lastIdx], str):
+        if isinstance(part, str) and (self.lastIdx in self.data) and isinstance(self.data[self.lastIdx], str):
             self.data[self.lastIdx] += part
         else:
             if isinstance(part, dict):
@@ -276,6 +279,20 @@ class SublimergeScrollSync():
         if self.left.window() != None and self.right.window() != None:
             sublime.set_timeout(self.sync, 100)
 
+class SublimergeViewEraseCommand(sublime_plugin.TextCommand):
+    def run(self, edit):
+        self.view.erase(edit, sublime.Region(0, self.view.size()))
+
+
+class SublimergeViewAppend(sublime_plugin.TextCommand):
+    def run(self, edit, text):
+        self.view.insert(edit, self.view.size(), text)
+
+
+class SublimergeViewReplace(sublime_plugin.TextCommand):
+    def run(self, edit, begin, end, text):
+        self.view.replace(edit, sublime.Region(begin, end), text)
+
 
 class SublimergeView():
     left = None
@@ -307,12 +324,12 @@ class SublimergeView():
             "cells": [[0, 0, 1, 1], [1, 0, 2, 1]]
         })
 
-        if isinstance(left, unicode):
+        if not isinstance(left, sublime.View):
             self.left = self.window.open_file(left)
         else:
             self.left = self.window.open_file(left.file_name())
 
-        if isinstance(right, unicode):
+        if not isinstance(right, sublime.View):
             self.right = self.window.open_file(right)
         else:
             self.right = self.window.open_file(right.file_name())
@@ -357,26 +374,29 @@ class SublimergeView():
         left = self.left
         right = self.right
 
-        edit = left.begin_edit()
-        left.erase(edit, sublime.Region(0, left.size()))
-        left.end_edit(edit)
-
-        edit = right.begin_edit()
-        right.erase(edit, sublime.Region(0, right.size()))
-        right.end_edit(edit)
+        # edit = left.begin_edit(0, '')
+        # left.erase(edit, sublime.Region(0, left.size()))
+        # left.end_edit(edit)
+        left.run_command('sublimerge_view_erase')
+        right.run_command('sublimerge_view_erase')
+        # edit = right.begin_edit(0, '')
+        # right.erase(edit, sublime.Region(0, right.size()))
+        # right.end_edit(edit)
 
         regions = []
         i = 0
 
         for part in diff:
             if not isinstance(part, dict):
-                edit = left.begin_edit()
-                left.insert(edit, left.size(), part)
-                left.end_edit(edit)
+                left.run_command('sublimerge_view_append', {'text': part})
+                right.run_command('sublimerge_view_append', {'text': part})
+                # edit = left.begin_edit(0, '')
+                # left.insert(edit, left.size(), part)
+                # left.end_edit(edit)
 
-                edit = right.begin_edit()
-                right.insert(edit, right.size(), part)
-                right.end_edit(edit)
+                # edit = right.begin_edit(0, '')
+                # right.insert(edit, right.size(), part)
+                # right.end_edit(edit)
             else:
                 ignore = False
 
@@ -386,13 +406,14 @@ class SublimergeView():
                         ignore = True
 
                 if ignore:
-                    edit = left.begin_edit()
-                    left.insert(edit, left.size(), part['-'])
-                    left.end_edit(edit)
-
-                    edit = right.begin_edit()
-                    right.insert(edit, right.size(), part['+'])
-                    right.end_edit(edit)
+                    # edit = left.begin_edit(0, '')
+                    # left.insert(edit, left.size(), part['-'])
+                    # left.end_edit(edit)
+                    left.run_command('sublimerge_view_append', {'text': part['-']})
+                    right.run_command('sublimerge_view_append', {'text': part['+']})
+                    # edit = right.begin_edit(0, '')
+                    # right.insert(edit, right.size(), part['+'])
+                    # right.end_edit(edit)
                     continue
 
                 pair = {
@@ -406,7 +427,7 @@ class SublimergeView():
 
                 i += 1
 
-                edit = left.begin_edit()
+                # edit = left.begin_edit(0, '')
                 leftStart = left.size()
 
                 if part['+'] != '' and part['-'] != '' and part['intraline'] != '':
@@ -438,13 +459,15 @@ class SublimergeView():
 
                 enlarged = self.enlargeCorrespondingPart(part['+'], part['-'])
 
-                left.insert(edit, leftStart, enlarged[1])
-                left.end_edit(edit)
+                # left.insert(edit, leftStart, enlarged[1])
+                # left.end_edit(edit)
+                left.run_command('sublimerge_view_append', {'text': enlarged[1]})
 
-                edit = right.begin_edit()
+                # edit = right.begin_edit(0, '')
                 rightStart = right.size()
-                right.insert(edit, rightStart, enlarged[0])
-                right.end_edit(edit)
+                # right.insert(edit, rightStart, enlarged[0])
+                # right.end_edit(edit)
+                right.run_command('sublimerge_view_append', {'text': enlarged[0]})
 
                 pair['regionLeft'] = sublime.Region(leftStart, leftStart + len(left.substr(sublime.Region(leftStart, left.size()))))
                 pair['regionRight'] = sublime.Region(rightStart, rightStart + len(right.substr(sublime.Region(rightStart, right.size()))))
@@ -576,13 +599,16 @@ class SublimergeView():
             target.set_read_only(False)
             source.set_read_only(False)
 
-            edit = target.begin_edit()
-            target.replace(edit, targetRegion, contents)
-            target.end_edit(edit)
+            # edit = target.begin_edit(0, '')
+            # target.replace(edit, targetRegion, contents)
+            # target.end_edit(edit)
+            target.run_command('sublimerge_view_replace', {'begin': targetRegion.begin(), 'end': targetRegion.end(), 'text': contents})
 
-            edit = source.begin_edit()
-            source.replace(edit, sourceRegion, contents)
-            source.end_edit(edit)
+            # edit = source.begin_edit(0, '')
+            # source.replace(edit, sourceRegion, contents)
+            # source.end_edit(edit)
+
+            source.run_command('sublimerge_view_replace', {'begin': sourceRegion.begin(), 'end': sourceRegion.end(), 'text': contents})
 
             diffLenLeft = self.left.size() - lenLeft
             diffLenRight = self.right.size() - lenRight
@@ -638,18 +664,19 @@ class SublimergeView():
             contentKey = 'mergeLeft'
 
         view.set_read_only(False)
-        edit = view.begin_edit()
+        #edit = view.begin_edit(0, '')
 
         for i in range(len(self.regions)):
             sizeBefore = view.size()
-            view.replace(edit, self.regions[i][regionKey], self.regions[i][contentKey])
+            #view.replace(edit, self.regions[i][regionKey], self.regions[i][contentKey])
+            view.run_command('sublimerge_view_replace', {'begin': self.regions[i][regionKey].begin(), 'end': self.regions[i][regionKey].end(), 'text': self.regions[i][contentKey]})
             sizeDiff = view.size() - sizeBefore
 
             if sizeDiff != 0:
                 for j in range(i, len(self.regions)):
                     self.regions[j][regionKey] = sublime.Region(self.regions[j][regionKey].begin() + sizeDiff, self.regions[j][regionKey].end() + sizeDiff)
 
-        view.end_edit(edit)
+        #view.end_edit(edit)
         view.set_read_only(True)
 
 
@@ -693,12 +720,12 @@ class SublimergeDiffThread(threading.Thread):
 
         #self.text1 = self.left.substr(sublime.Region(0, self.left.size()))
 
-        if isinstance(self.left, unicode):
+        if not isinstance(self.left, sublime.View):
             self.text1 = open(self.left, 'rb').read().decode('utf-8', 'replace')
         else:
             self.text1 = self.left.substr(sublime.Region(0, self.left.size()))
 
-        if isinstance(self.right, unicode):
+        if not isinstance(self.right, sublime.View):
             self.text2 = open(self.right, 'rb').read().decode('utf-8', 'replace')
         else:
             self.text2 = self.right.substr(sublime.Region(0, self.right.size()))
@@ -796,22 +823,23 @@ class SublimergeHistoryThread(threading.Thread):
         outputStack = []
 
         def addCommitStack(line):
-            match = re.match('^commit\s+([a-zA-Z0-9]+)$', line)
+            if isinstance(line, str):
+                match = re.match('^commit\s+([a-zA-Z0-9]+)$', line)
 
-            if match:
-                commitStack.append({'commit': match.group(1), 'date': '', 'author': '', 'msg': []})
-            elif len(commitStack) > 0:
-                match = re.match('^Author:\s+(.+)$', line)
                 if match:
-                    commitStack[len(commitStack) - 1]['author'] = match.group(1).decode('utf-8', 'replace')
-                else:
-                    match = re.match('^Date:\s+(.+)$', line)
+                    commitStack.append({'commit': match.group(1), 'date': '', 'author': '', 'msg': []})
+                elif len(commitStack) > 0:
+                    match = re.match('^Author:\s+(.+)$', line)
                     if match:
-                        commitStack[len(commitStack) - 1]['date'] = match.group(1).decode('utf-8', 'replace')
+                        commitStack[len(commitStack) - 1]['author'] = match.group(1).decode('utf-8', 'replace')
                     else:
-                        commitStack[len(commitStack) - 1]['msg'].append(line.decode('utf-8', 'replace'))
-            else:
-                outputStack.append(line.decode('utf-8', 'replace'))
+                        match = re.match('^Date:\s+(.+)$', line)
+                        if match:
+                            commitStack[len(commitStack) - 1]['date'] = match.group(1).decode('utf-8', 'replace')
+                        else:
+                            commitStack[len(commitStack) - 1]['msg'].append(line.decode('utf-8', 'replace'))
+                else:
+                    outputStack.append(line.decode('utf-8', 'replace'))
 
         sp = os.path.split(self.filename)
 
@@ -843,13 +871,6 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
     commits = []
     window = None
     view = None
-    
-    def is_enabled(self):
-        view = sublime.active_window().active_view();
-        if diffView and  diffView.left and diffView.right and view and (view.id() == diffView.left.id() or view.id() == diffView.right.id()):
-            return False
-
-        return True
 
     def getComparableFiles(self):
         self.viewsList = []
@@ -875,7 +896,7 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
         ratiosLength = len(ratios)
 
         if ratiosLength > 0:
-            ratios.sort(self.sortFiles)
+            ratios = sorted(ratios, key=self.cmp_to_key(self.sortFiles))
 
             if S.get('compact_files_list'):
                 for i in range(ratiosLength):
@@ -892,7 +913,7 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
                 self.viewsPaths.append(f['file'])
                 self.viewsList.append(self.prepareListItem(f['file'], f['dirname']))
 
-            self.window.show_quick_panel(self.viewsList, self.onListSelect)
+            sublime.set_timeout(lambda: self.window.show_quick_panel(self.viewsList, self.onListSelect), 0) #timeout for ST3
         else:
             if S.get('same_syntax_only'):
                 syntax = re.match('(.+)\.tmLanguage$', os.path.split(active.settings().get('syntax'))[1])
@@ -925,7 +946,7 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
             items.append('Compare to revision...')
 
         if len(items) > 1:
-            self.window.show_quick_panel(items, onMenuSelect)
+            sublime.set_timeout(lambda: self.window.show_quick_panel(items, onMenuSelect), 0)
         else:
             self.getComparableFiles()
 
@@ -937,7 +958,8 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
             cmd = '%s show %s %s:"./%s" > "%s"' % (S.get('git_executable_path'), S.get('git_show_args'), self.commits[index], sp[1], outfile)
 
             for line in executeShellCmd(cmd, sp[0]):
-                print line
+                pass
+                #print line
 
             th = SublimergeDiffThread(self.window, self.active, outfile, rightTmp=True)
             th.start()
@@ -953,7 +975,8 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
             cmd = '%s cat "%s"@%s %s > "%s"' % (S.get('svn_executable_path'), sp[1], self.commits[index], S.get('svn_cat_args'), outfile)
 
             for line in executeShellCmd(cmd, sp[0]):
-                print line
+                pass
+                #print line
 
             th = SublimergeDiffThread(self.window, self.active, outfile, rightTmp=True)
             th.start()
@@ -1001,6 +1024,24 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
         for i in range(len(a1)):
             if i > len2 or a1[i] != a2[i]:
                 return a1[i]
+
+    def cmp_to_key(self, mycmp):
+        class K(object):
+            def __init__(self, obj, *args):
+                self.obj = obj
+            def __lt__(self, other):
+                return mycmp(self.obj, other.obj) < 0
+            def __gt__(self, other):
+                return mycmp(self.obj, other.obj) > 0
+            def __eq__(self, other):
+                return mycmp(self.obj, other.obj) == 0
+            def __le__(self, other):
+                return mycmp(self.obj, other.obj) <= 0
+            def __ge__(self, other):
+                return mycmp(self.obj, other.obj) >= 0
+            def __ne__(self, other):
+                return mycmp(self.obj, other.obj) != 0
+        return K
 
     def sortFiles(self, a, b):
         d = b['ratio'] - a['ratio']
@@ -1085,11 +1126,11 @@ class SublimergeListener(sublime_plugin.EventListener):
 
         if diffView != None:
             if view.id() == diffView.left.id():
-                print "Left file: " + view.file_name()
+                #print "Left file: " + view.file_name()
                 self.left = view
 
             elif view.id() == diffView.right.id():
-                print "Right file: " + view.file_name()
+                #print "Right file: " + view.file_name()
                 self.right = view
 
             if self.left != None and self.right != None:
@@ -1103,7 +1144,7 @@ class SublimergeListener(sublime_plugin.EventListener):
         if (diffView):
             if view.id() == diffView.left.id():
                 diffView.abandonUnmergedDiffs('left')
-
+ 
             elif view.id() == diffView.right.id():
                 diffView.abandonUnmergedDiffs('right')
 
@@ -1113,7 +1154,7 @@ class SublimergeListener(sublime_plugin.EventListener):
         if diffView and (view.id() == diffView.left.id() or view.id() == diffView.right.id()):
             wnd = view.window()
             if wnd:
-                wnd.run_command('close_window')
+                sublime.set_timeout(lambda: wnd.run_command('close_window'), 0)
 
     def on_close(self, view):
         global diffView
@@ -1122,13 +1163,13 @@ class SublimergeListener(sublime_plugin.EventListener):
             if view.id() == diffView.left.id():
                 wnd = diffView.right.window()
                 if wnd != None:
-                    wnd.run_command('close_window')
+                    sublime.set_timeout(lambda: wnd.run_command('close_window'), 0)
                 diffView = None
 
             elif view.id() == diffView.right.id():
                 wnd = diffView.left.window()
                 if wnd != None:
-                    wnd.run_command('close_window')
+                    sublime.set_timeout(lambda: wnd.run_command('close_window'), 0)
                 diffView = None
 
     def on_selection_modified(self, view):
