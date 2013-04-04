@@ -8,6 +8,21 @@ turned off via package settings (vcs_support). Please report any problems with t
 
 ![Sublimerge](http://cloud.github.com/downloads/borysf/Sublimerge/Screenshot2.png "Sublimerge")
 
+Installation
+------------
+
+If you are using Will Bond's Package Control, you can easily install Sublimerge with `Package Control: Install Package`.
+Otherwise you can simply clone this repo in Sublime Text 2' Packages directory.
+
+Note for Sublime Text 3 users
+-----------------------------
+Sublimerge is now experimentally ported for ST 3. Installation instructions can be found in branch sublime-text-3: https://github.com/borysf/Sublimerge/tree/sublime-text-3
+
+Donation
+--------
+
+If you find this plugin useful, you can say "thanks" by Donation: http://borysforytarz.pl/sublimerge.html :)
+
 Default key bindings (platform independent)
 ------------------------------------------
 
@@ -38,22 +53,6 @@ You can access Sublimerge from the following context menus:
 
 - Editor: File's tab  
   ![Sublimerge](http://borysforytarz.pl/img/context-tab.png "Sublimerge")  
-
-
-Installation
-------------
-
-If you are using Will Bond's Package Control, you can easily install Sublimerge with `Package Control: Install Package`.
-Otherwise you can simply clone this repo in Sublime Text 2' Packages directory.
-
-Note for Sublime Text 3 users
------------------------------
-Sublimerge is now experimentally ported for ST 3. Installation instructions can be found in branch sublime-text-3: https://github.com/borysf/Sublimerge/tree/sublime-text-3
-
-Donation
---------
-
-If you find this plugin useful, you can say "thanks" by Donation: http://borysforytarz.pl/sublimerge.html :)
 
 --
 Because this is my first Sublime Text 2 plugin and the first Python code I have ever written, probably some things could be done
