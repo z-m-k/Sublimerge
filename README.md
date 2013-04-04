@@ -47,7 +47,8 @@ You can access Sublimerge from the following context menus:
 Installation
 ------------
 
-Clone this repo in Sublime Text 3' Packages directory and checkout into sublime-text-3
+To install simply do the following command in ST3 Packages' directory (requires GIT to be installed first):  
+`git clone -b sublime-text-3 git@github.com:borysf/Sublimerge.git`
 
 Donation
 --------
