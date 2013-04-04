@@ -16,7 +16,7 @@ Otherwise you can simply clone this repo in Sublime Text 2' Packages directory.
 
 Note for Sublime Text 3 users
 -----------------------------
-Sublimerge is now experimentally ported for ST 3. Installation instructions can be found in branch sublime-text-3: https://github.com/borysf/Sublimerge/tree/sublime-text-3
+Sublimerge is now experimentally ported for ST 3. Installation instructions can be found in branch sublime-text-3: https://github.com/borysf/Sublimerge/tree/sublime-text-3 in README.md file.
 
 Donation
 --------
