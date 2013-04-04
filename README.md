@@ -48,7 +48,7 @@ Installation
 ------------
 
 To install simply do the following command in ST3 Packages' directory (requires GIT to be installed first):  
-`git clone -b sublime-text-3 git@github.com:borysf/Sublimerge.git`
+`git clone -b sublime-text-3 git://github.com/borysf/Sublimerge.git`
 
 Donation
 --------
