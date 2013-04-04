@@ -12,6 +12,17 @@ Please note that this branch contains a port of Sublimerge which was originally 
 
 ![Sublimerge](http://cloud.github.com/downloads/borysf/Sublimerge/Screenshot2.png "Sublimerge")
 
+Installation
+------------
+
+To install simply do the following command in ST3 Packages' directory (requires GIT to be installed first):  
+`git clone -b sublime-text-3 git://github.com/borysf/Sublimerge.git`
+
+Donation
+--------
+
+If you find this plugin useful, you can say "thanks" by Donation: http://borysforytarz.pl/sublimerge.html :) 
+
 Default key bindings (platform independent)
 ------------------------------------------
 
@@ -43,17 +54,6 @@ You can access Sublimerge from the following context menus:
 - Editor: File's tab  
   ![Sublimerge](http://borysforytarz.pl/img/context-tab.png "Sublimerge")  
 
-
-Installation
-------------
-
-To install simply do the following command in ST3 Packages' directory (requires GIT to be installed first):  
-`git clone -b sublime-text-3 git://github.com/borysf/Sublimerge.git`
-
-Donation
---------
-
-If you find this plugin useful, you can say "thanks" by Donation: http://borysforytarz.pl/sublimerge.html :)
 
 --
 Because this is my first Sublime Text plugin and the first Python code I have ever written, probably some things could be done
