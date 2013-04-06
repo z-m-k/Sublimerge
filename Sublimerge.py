@@ -22,6 +22,7 @@
  #
  # https://github.com/borysf/Sublimerge
 
+
 import sublime
 import sublime_plugin
 import difflib
@@ -99,7 +100,7 @@ def executeShellCmd(exe, cwd):
     print ("Cmd: %s" % (exe))
     print ("Dir: %s" % (cwd))
 
-    p = subprocess.Popen(exe, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd, shell=True)    
+    p = subprocess.Popen(exe, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd, shell=True)
 
     for line in p.stdout.readlines():
         line = str(line, 'utf-8')
@@ -561,8 +562,11 @@ class SublimergeView():
     def goDown(self):
         self.selectDiff(self.currentDiff + 1)
 
+    def mergeDisabled(self, direction):
+        return (self.rightTmp and direction == '>>') or (self.leftTmp and direction == '<<')
+
     def merge(self, direction, mergeAll):
-        if (self.rightTmp and direction == '>>') or (self.leftTmp and direction == '<<'):
+        if self.mergeDisabled(direction):
             return
 
         if mergeAll:
@@ -816,9 +820,6 @@ class SublimergeHistoryThread(threading.Thread):
         outputStack = []
 
         def addCommitStack(line):
-
-            #print(line)
-
             match = re.match('^commit\s+([a-zA-Z0-9]+)$', line)
 
             if match:
@@ -847,8 +848,6 @@ class SublimergeHistoryThread(threading.Thread):
             sublime.error_message("\n".join(outputStack))
             return
 
-        # print(commitStack)
-
         self.displayQuickPanel(commitStack, self.sublimerge.onListSelectGit)
 
     def displayQuickPanel(self, commitStack, callback):
@@ -868,6 +867,13 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
     commits = []
     window = None
     view = None
+
+    def is_enabled(self):
+        view = sublime.active_window().active_view();
+        if diffView and  diffView.left and diffView.right and view and (view.id() == diffView.left.id() or view.id() == diffView.right.id()):
+            return False
+
+        return True
 
     def getComparableFiles(self):
         self.viewsList = []
@@ -942,7 +948,7 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
         if vcs:
             items.append('Compare to revision...')
 
-        if len(items) > 1:
+        if len(items) > 1 or vcs:
             sublime.set_timeout(lambda: self.window.show_quick_panel(items, onMenuSelect), 0)
         else:
             self.getComparableFiles()
@@ -1072,11 +1078,31 @@ class SublimergeGoUpCommand(sublime_plugin.WindowCommand):
         if diffView != None:
             diffView.goUp()
 
+    def is_visible(self):
+        view = sublime.active_window().active_view();
+        if diffView and diffView.left and diffView.right and view and (view.id() == diffView.left.id() or view.id() == diffView.right.id()):
+            return True
+
+        return False
+
+    def is_enabled(self):
+        return self.is_visible() and len(diffView.regions) > 1 and diffView.currentDiff > 0
+
 
 class SublimergeGoDownCommand(sublime_plugin.WindowCommand):
     def run(self):
         if diffView != None:
             diffView.goDown()
+
+    def is_visible(self):
+        view = sublime.active_window().active_view();
+        if diffView and diffView.left and diffView.right and view and (view.id() == diffView.left.id() or view.id() == diffView.right.id()):
+            return True
+
+        return False
+
+    def is_enabled(self):
+        return self.is_visible() and diffView.currentDiff < len(diffView.regions) - 1
 
 
 class SublimergeMergeLeftCommand(sublime_plugin.WindowCommand):
@@ -1084,11 +1110,31 @@ class SublimergeMergeLeftCommand(sublime_plugin.WindowCommand):
         if diffView != None:
             diffView.merge('<<', mergeAll)
 
+    def is_visible(self):
+        view = sublime.active_window().active_view();
+        if diffView and diffView.left and diffView.right and view and (view.id() == diffView.left.id() or view.id() == diffView.right.id()) and not diffView.mergeDisabled('<<'):
+            return True
+
+        return False
+
+    def is_enabled(self):
+        return self.is_visible() and len(diffView.regions) > 0
+
 
 class SublimergeMergeRightCommand(sublime_plugin.WindowCommand):
     def run(self, mergeAll=False):
         if diffView != None:
             diffView.merge('>>', mergeAll)
+
+    def is_visible(self):
+        view = sublime.active_window().active_view();
+        if diffView and diffView.left and diffView.right and view and (view.id() == diffView.left.id() or view.id() == diffView.right.id()) and not diffView.mergeDisabled('>>'):
+            return True
+
+        return False
+
+    def is_enabled(self):
+        return self.is_visible() and len(diffView.regions) > 0
 
 
 class SublimergeDiffSelectedFiles(sublime_plugin.WindowCommand):
@@ -1141,7 +1187,7 @@ class SublimergeListener(sublime_plugin.EventListener):
         if (diffView):
             if view.id() == diffView.left.id():
                 diffView.abandonUnmergedDiffs('left')
- 
+
             elif view.id() == diffView.right.id():
                 diffView.abandonUnmergedDiffs('right')
 
