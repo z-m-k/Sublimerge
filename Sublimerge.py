@@ -847,7 +847,7 @@ class SublimergeHistoryThread(threading.Thread):
             sublime.error_message("\n".join(outputStack))
             return
 
-        print(commitStack)
+        # print(commitStack)
 
         self.displayQuickPanel(commitStack, self.sublimerge.onListSelectGit)
 
