@@ -22,7 +22,6 @@
  #
  # https://github.com/borysf/Sublimerge
 
-
 import sublime
 import sublime_plugin
 import difflib
@@ -97,23 +96,17 @@ def lookForVcs(path):
 
 
 def executeShellCmd(exe, cwd):
-    #print "Cmd: %s" % (exe)
-    #print "Dir: %s" % (cwd)
+    print ("Cmd: %s" % (exe))
+    print ("Dir: %s" % (cwd))
 
-    p = subprocess.Popen(exe, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd, shell=True)
+    p = subprocess.Popen(exe, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd, shell=True)    
 
-    while(True):
-        retcode = p.poll()
-        line = p.stdout.readline()
-
-        if isinstance(line, str):
-            line = re.sub('(^\s+$)|(\s+$)', '', p.stdout.readline())
+    for line in p.stdout.readlines():
+        line = str(line, 'utf-8')
+        line = re.sub('(^\s+$)|(\s+$)', '', line)
 
         if line != '':
             yield line
-
-        if retcode is not None:
-            break
 
 
 class SublimergeDiffer():
@@ -340,9 +333,9 @@ class SublimergeView():
         self.left.set_scratch(True)
         self.right.set_scratch(True)
 
-        if self.leftTmp and isinstance(left, unicode):
+        if self.leftTmp and not isinstance(left, sublime.View):
             os.remove(left)
-        if self.rightTmp and isinstance(right, unicode):
+        if self.rightTmp and not isinstance(right, sublime.View):
             os.remove(right)
 
     def enlargeCorrespondingPart(self, part1, part2):
@@ -755,9 +748,9 @@ class SublimergeDiffThread(threading.Thread):
 
         if not differs:
             sublime.error_message('There is no difference between files')
-            if self.leftTmp and isinstance(self.left, unicode):
+            if self.leftTmp and not isinstance(self.left, sublime.View):
                 os.remove(self.left)
-            if self.rightTmp and isinstance(self.right, unicode):
+            if self.rightTmp and not isinstance(self.right, sublime.View):
                 os.remove(self.right)
             return
 
@@ -823,23 +816,25 @@ class SublimergeHistoryThread(threading.Thread):
         outputStack = []
 
         def addCommitStack(line):
-            if isinstance(line, str):
-                match = re.match('^commit\s+([a-zA-Z0-9]+)$', line)
 
+            #print(line)
+
+            match = re.match('^commit\s+([a-zA-Z0-9]+)$', line)
+
+            if match:
+                commitStack.append({'commit': match.group(1), 'date': '', 'author': '', 'msg': []})
+            elif len(commitStack) > 0:
+                match = re.match('^Author:\s+(.+)$', line)
                 if match:
-                    commitStack.append({'commit': match.group(1), 'date': '', 'author': '', 'msg': []})
-                elif len(commitStack) > 0:
-                    match = re.match('^Author:\s+(.+)$', line)
-                    if match:
-                        commitStack[len(commitStack) - 1]['author'] = match.group(1).decode('utf-8', 'replace')
-                    else:
-                        match = re.match('^Date:\s+(.+)$', line)
-                        if match:
-                            commitStack[len(commitStack) - 1]['date'] = match.group(1).decode('utf-8', 'replace')
-                        else:
-                            commitStack[len(commitStack) - 1]['msg'].append(line.decode('utf-8', 'replace'))
+                    commitStack[len(commitStack) - 1]['author'] = match.group(1)
                 else:
-                    outputStack.append(line.decode('utf-8', 'replace'))
+                    match = re.match('^Date:\s+(.+)$', line)
+                    if match:
+                        commitStack[len(commitStack) - 1]['date'] = match.group(1)
+                    else:
+                        commitStack[len(commitStack) - 1]['msg'].append(line)
+            else:
+                outputStack.append(line)
 
         sp = os.path.split(self.filename)
 
@@ -851,6 +846,8 @@ class SublimergeHistoryThread(threading.Thread):
         if len(outputStack) > 0:
             sublime.error_message("\n".join(outputStack))
             return
+
+        print(commitStack)
 
         self.displayQuickPanel(commitStack, self.sublimerge.onListSelectGit)
 
