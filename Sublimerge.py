@@ -88,7 +88,7 @@ def lookForVcs(path):
 
     if os.path.isdir(path + '/.svn'):
         return 'svn'
-    elif os.path.isdir(path + '/.git'):
+    elif os.path.exists(path + '/.git'):
         return 'git'
     else:
         sp = os.path.split(path)
