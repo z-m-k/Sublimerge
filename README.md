@@ -18,6 +18,9 @@ Installation
 To install simply do the following command in ST3 Packages' directory (requires GIT to be installed first):  
 `git clone -b sublime-text-3 git://github.com/borysf/Sublimerge.git`
 
+Note: Some users complain that Sublimerge does not work properly when installed on Windows machine using above GIT command.
+To fix this issue open Sublimerge.py in ST 3 and simply save it again.
+
 Donation
 --------
 
