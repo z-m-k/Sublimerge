@@ -63,7 +63,7 @@
     "git_executable_path": "git",
 
     //Additional arguments for 'git log' command
-    "git_log_args": "",
+    "git_log_args": "--encoding=UTF-8 --no-color",
 
     //Additional arguments for 'git show' command
     "git_show_args": "",
