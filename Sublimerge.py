@@ -74,14 +74,6 @@ S.load()
 settings.add_on_change('reload', lambda: S.load())
 
 
-def isSaved(view):
-    if view.is_dirty():
-        sublime.error_message('File `' + os.path.split(view.file_name())[1] + '` must be saved in order to compare')
-        return False
-
-    return True
-
-
 def lookForVcs(path):
     if not S.get('vcs_support'):
         return False
@@ -301,6 +293,8 @@ class SublimergeView():
     diff = None
     createdPositions = False
     lastSel = {'regionLeft': None, 'regionRight': None}
+    leftEnabled = True
+    rightEnabled = True
 
     def __init__(self, window, left, right, diff, leftTmp=False, rightTmp=False):
         window.run_command('new_window')
@@ -320,16 +314,21 @@ class SublimergeView():
 
         if not isinstance(left, sublime.View):
             self.left = self.window.open_file(left)
+            self.leftEnabled = False
         else:
             self.left = self.window.open_file(left.file_name())
 
         if not isinstance(right, sublime.View):
             self.right = self.window.open_file(right)
+            self.rightEnabled = False
         else:
             self.right = self.window.open_file(right.file_name())
 
-        if not leftTmp and rightTmp:
+        if not self.rightEnabled:
             self.right.set_syntax_file(self.left.settings().get('syntax'))
+
+        if not self.leftEnabled:
+            self.left.set_syntax_file(self.right.settings().get('syntax'))
 
         self.left.set_scratch(True)
         self.right.set_scratch(True)
@@ -563,7 +562,7 @@ class SublimergeView():
         self.selectDiff(self.currentDiff + 1)
 
     def mergeDisabled(self, direction):
-        return (self.rightTmp and direction == '>>') or (self.leftTmp and direction == '<<')
+        return (not self.rightEnabled and direction == '>>') or (not self.leftEnabled and direction == '<<')
 
     def merge(self, direction, mergeAll):
         if self.mergeDisabled(direction):
@@ -721,11 +720,15 @@ class SublimergeDiffThread(threading.Thread):
             self.text1 = open(self.left, 'rb').read().decode('utf-8', 'replace')
         else:
             self.text1 = self.left.substr(sublime.Region(0, self.left.size()))
+            if self.left.is_dirty():
+                self.leftTmp = True
 
         if not isinstance(self.right, sublime.View):
             self.text2 = open(self.right, 'rb').read().decode('utf-8', 'replace')
         else:
             self.text2 = self.right.substr(sublime.Region(0, self.right.size()))
+            if self.right.is_dirty():
+                self.rightTmp = True
 
         threading.Thread.__init__(self)
 
@@ -930,7 +933,7 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
         self.window = sublime.active_window()
         self.active = self.window.active_view()
 
-        if not self.active or not isSaved(self.active):
+        if not self.active:
             return
 
         sp = os.path.split(self.active.file_name())
@@ -1068,9 +1071,8 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
             if compareTo != None:
                 global diffView
 
-                if isSaved(compareTo):
-                    th = SublimergeDiffThread(self.window, self.window.active_view(), compareTo)
-                    th.start()
+                th = SublimergeDiffThread(self.window, self.window.active_view(), compareTo)
+                th.start()
 
 
 class SublimergeGoUpCommand(sublime_plugin.WindowCommand):
@@ -1141,7 +1143,7 @@ class SublimergeDiffSelectedFiles(sublime_plugin.WindowCommand):
     def run(self, files):
         allViews = self.window.views()
         for view in allViews:
-            if (view.file_name() == files[0] or view.file_name() == files[1]) and not isSaved(view):
+            if (view.file_name() == files[0] or view.file_name() == files[1]):
                 return
 
         th = SublimergeDiffThread(self.window, files[0], files[1])
