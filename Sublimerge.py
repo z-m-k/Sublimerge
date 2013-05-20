@@ -319,10 +319,14 @@ class SublimergeView():
         self.left.set_scratch(True)
         self.right.set_scratch(True)
 
-        if self.leftTmp and not isinstance(left, sublime.View):
-            os.remove(left)
-        if self.rightTmp and not isinstance(right, sublime.View):
-            os.remove(right)
+        self.clear()
+
+    def clear(self):
+        if self.rightTmp and os.path.exists(self.right.file_name()):
+            os.remove(self.right.file_name())
+
+        if self.leftTmp and os.path.exists(self.left.file_name()):
+            os.remove(self.left.file_name())
 
     def enlargeCorrespondingPart(self, part1, part2):
         linesPlus = part1.splitlines()
@@ -1155,6 +1159,7 @@ class SublimergeListener(sublime_plugin.EventListener):
         global diffView
 
         if diffView and (view.id() == diffView.left.id() or view.id() == diffView.right.id()):
+            diffView.clear()
             wnd = view.window()
             if wnd:
                 sublime.set_timeout(lambda: wnd.run_command('close_window'), 0)
@@ -1164,12 +1169,14 @@ class SublimergeListener(sublime_plugin.EventListener):
 
         if diffView != None:
             if view.id() == diffView.left.id():
+                diffView.clear()
                 wnd = diffView.right.window()
                 if wnd != None:
                     sublime.set_timeout(lambda: wnd.run_command('close_window'), 0)
                 diffView = None
 
             elif view.id() == diffView.right.id():
+                diffView.clear()
                 wnd = diffView.left.window()
                 if wnd != None:
                     sublime.set_timeout(lambda: wnd.run_command('close_window'), 0)
