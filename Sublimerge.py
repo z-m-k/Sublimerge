@@ -32,6 +32,30 @@ import subprocess
 import threading
 from xml.dom import minidom
 
+
+# hack for ST3 to make Sublimerge load properly
+try:
+    lock = __file__ + '.lock'
+
+    if not os.path.exists(lock):
+        print("forcing Sublimerge to reload itself")
+        handle = open(lock, 'w')
+        handle.write('')
+        handle.close()
+
+        handle = open(__file__, 'r')
+        contents = handle.read()
+        handle.close()
+
+        handle = open(__file__, 'w')
+        handle.write(contents)
+        handle.close();
+    else:
+        os.remove(lock)
+except:
+    print("could not force Sublimerge to reload")
+# end hack
+
 diffView = None
 
 settings = sublime.load_settings('Sublimerge.sublime-settings')
