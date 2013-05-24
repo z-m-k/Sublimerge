@@ -348,10 +348,10 @@ class SublimergeView():
         else:
             self.right = self.window.open_file(right.file_name())
 
-        if not self.rightEnabled:
+        if not self.rightEnabled and self.rightTmp:
             self.right.set_syntax_file(self.left.settings().get('syntax'))
 
-        if not self.leftEnabled:
+        if not self.leftEnabled and self.leftTmp:
             self.left.set_syntax_file(self.right.settings().get('syntax'))
 
         self.left.set_scratch(True)
@@ -1171,8 +1171,11 @@ class SublimergeDiffSelectedFiles(sublime_plugin.WindowCommand):
     def run(self, files):
         allViews = self.window.views()
         for view in allViews:
-            if (view.file_name() == files[0] or view.file_name() == files[1]):
-                return
+            if view.file_name() == files[0]:
+                files[0] = view
+
+            if view.file_name() == files[1]:
+                files[1] = view
 
         th = SublimergeDiffThread(self.window, files[0], files[1])
         th.start()
