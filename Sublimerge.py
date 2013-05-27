@@ -961,7 +961,7 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
         self.window = sublime.active_window()
         self.active = self.window.active_view()
 
-        if not self.active:
+        if not self.active or self.active.file_name() is None:
             return
 
         sp = os.path.split(self.active.file_name())
