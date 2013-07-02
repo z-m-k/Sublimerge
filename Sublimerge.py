@@ -841,7 +841,7 @@ class SublimergeHistoryThread(threading.Thread):
                 sublime.error_message('Unable to parse XML')
 
         elif xml != '':
-            sublime.error_message(xml.decode('utf-8', 'replace'))
+            sublime.error_message(xml)
 
         else:
             sublime.error_message('Empty svn log output')
