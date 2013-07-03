@@ -975,9 +975,11 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
         for item in commitStack:
             self.commits.append(item['commit'])
             itm = [item['commit'][0:10] + ' @ ' + item['date'], item['author']]
+            line = ""
             if len(item['msg']) > 0:
                 line = re.sub('(^\s+)|(\s+$)', '', item['msg'][0])
-                itm.append(line)
+            
+            itm.append(line)
 
             self.itemsList.append(itm)
 
