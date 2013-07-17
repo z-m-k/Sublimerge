@@ -486,8 +486,8 @@ class SublimergeView():
             self.left.add_regions('intralines' + region['name'], region['intralines']['left'], S.get('diff_region_change_scope'))
             self.right.add_regions('intralines' + region['name'], region['intralines']['right'], S.get('diff_region_change_scope'))
 
-        self.left.add_regions(region['name'], [region['regionLeft']], leftScope, S.get('diff_region_gutter_icon'), sublime.DRAW_OUTLINED)
-        self.right.add_regions(region['name'], [region['regionRight']], rightScope, S.get('diff_region_gutter_icon'), sublime.DRAW_OUTLINED)
+        self.left.add_regions(region['name'], [region['regionLeft']], leftScope, S.get('diff_region_gutter_icon'))
+        self.right.add_regions(region['name'], [region['regionRight']], rightScope, S.get('diff_region_gutter_icon'))
 
     def createSelectedRegion(self, region):
         self.left.add_regions(region['name'], [region['regionLeft']], S.get('selected_diff_region_scope'), S.get('selected_diff_region_gutter_icon'))
