@@ -58,8 +58,9 @@ except:
 
 diffView = None
 
-settings = sublime.load_settings('Sublimerge.sublime-settings')
-
+# UGLY... BUT WORKS
+S = None
+settings = None
 
 class SublimergeSettings():
     s = {
@@ -93,9 +94,14 @@ class SublimergeSettings():
     def get(self, name):
         return self.s[name]
 
-S = SublimergeSettings()
-S.load()
-settings.add_on_change('reload', lambda: S.load())
+# UGLY... BUT WORKS
+def plugin_loaded():
+    global S, settings
+    settings = sublime.load_settings('Sublimerge.sublime-settings')
+
+    S = SublimergeSettings()
+    S.load()
+    settings.add_on_change('reload', lambda: S.load())
 
 
 def lookForVcs(path):
@@ -336,23 +342,23 @@ class SublimergeView():
             "cells": [[0, 0, 1, 1], [1, 0, 2, 1]]
         })
 
-        if not isinstance(left, sublime.View):
+        if isinstance(left, str):
             self.left = self.window.open_file(left)
             self.leftEnabled = False
         else:
             self.left = self.window.open_file(left.file_name())
 
-        if not isinstance(right, sublime.View):
+        if isinstance(right, str):
             self.right = self.window.open_file(right)
             self.rightEnabled = False
         else:
             self.right = self.window.open_file(right.file_name())
 
         if not self.rightEnabled and self.rightTmp:
-            self.right.set_syntax_file(self.left.settings().get('syntax'))
+            sublime.set_timeout(lambda: self.right.set_syntax_file(self.left.settings().get('syntax')), 100)
 
         if not self.leftEnabled and self.leftTmp:
-            self.left.set_syntax_file(self.right.settings().get('syntax'))
+            sublime.set_timeout(lambda: self.left.set_syntax_file(self.right.settings().get('syntax')), 100)
 
         self.left.set_scratch(True)
         self.right.set_scratch(True)
@@ -382,8 +388,8 @@ class SublimergeView():
 
         result = []
 
-        result.append("\n".join(linesPlus) + "\n")
-        result.append("\n".join(linesMinus) + "\n")
+        result.append("\n".join(str(v) for v in linesPlus) + "\n")
+        result.append("\n".join(str(v) for v in linesMinus) + "\n")
 
         return result
 
@@ -744,14 +750,14 @@ class SublimergeDiffThread(threading.Thread):
 
         #self.text1 = self.left.substr(sublime.Region(0, self.left.size()))
 
-        if not isinstance(self.left, sublime.View):
+        if isinstance(self.left, str):
             self.text1 = open(self.left, 'rb').read().decode('utf-8', 'replace')
         else:
             self.text1 = self.left.substr(sublime.Region(0, self.left.size()))
             if self.left.is_dirty():
                 self.leftTmp = True
 
-        if not isinstance(self.right, sublime.View):
+        if isinstance(self.right, str):
             self.text2 = open(self.right, 'rb').read().decode('utf-8', 'replace')
         else:
             self.text2 = self.right.substr(sublime.Region(0, self.right.size()))
@@ -783,9 +789,9 @@ class SublimergeDiffThread(threading.Thread):
 
         if not differs:
             sublime.error_message('There is no difference between files')
-            if self.leftTmp and not isinstance(self.left, sublime.View):
+            if self.leftTmp and isinstance(self.left, str):
                 os.remove(self.left)
-            if self.rightTmp and not isinstance(self.right, sublime.View):
+            if self.rightTmp and isinstance(self.right, str):
                 os.remove(self.right)
             return
 
@@ -1026,7 +1032,7 @@ class SublimergeCommand(sublime_plugin.WindowCommand):
             line = ""
             if len(item['msg']) > 0:
                 line = re.sub('(^\s+)|(\s+$)', '', item['msg'][0])
-            
+
             itm.append(line)
 
             self.itemsList.append(itm)
